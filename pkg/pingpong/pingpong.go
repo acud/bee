@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/janos/bee/pkg/p2p"
@@ -76,23 +77,38 @@ func (s *Service) Ping(ctx context.Context, peerID string, msgs ...string) (rtt 
 
 	w, r := protobuf.NewRW(stream)
 
-	var pong Pong
+	var wg sync.WaitGroup
+	//var mtx sync.Mutex
 	start := time.Now()
-	for _, msg := range msgs {
-		if err := w.WriteMsg(&Ping{
-			Greeting: msg,
-		}); err != nil {
-			return 0, fmt.Errorf("stream write: %w", err)
-		}
-
-		if err := r.ReadMsg(&pong); err != nil {
-			if err == io.EOF {
-				break
+	go func() {
+		for {
+			fmt.Println("reader loop")
+			var pong Pong
+			if err := r.ReadMsg(&pong); err != nil {
+				if err == io.EOF {
+					fmt.Println("got eof, returning")
+					return
+				}
+				//return 0, err
 			}
-			return 0, err
+			wg.Done()
+			log.Printf("got pong: %q\n", pong.Response)
 		}
+	}()
 
-		log.Printf("got pong: %q\n", pong.Response)
+	for _, msg := range msgs {
+		wg.Add(2)
+		go func(msg string) {
+			defer wg.Done()
+			fmt.Println("sending msg")
+			if err := w.WriteMsg(&Ping{
+				Greeting: msg,
+			}); err != nil {
+				fmt.Println(fmt.Errorf("stream write: %w", err))
+			}
+		}(msg)
 	}
+
+	wg.Wait()
 	return time.Since(start) / time.Duration(len(msgs)), nil
 }

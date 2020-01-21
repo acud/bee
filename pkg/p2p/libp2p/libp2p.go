@@ -101,11 +101,11 @@ func New(ctx context.Context, o Options) (*Service, error) {
 func (s *Service) AddProtocol(p p2p.ProtocolSpec) (err error) {
 	for _, ss := range p.StreamSpecs {
 		id := protocol.ID(p2p.NewSwarmStreamName(p.Name, ss.Name, ss.Version))
-		matcher, err := helpers.MultistreamSemverMatcher(id)
+		_, err := helpers.MultistreamSemverMatcher(id)
 		if err != nil {
 			return fmt.Errorf("match semver %s: %w", id, err)
 		}
-		s.host.SetStreamHandlerMatch(id, matcher, func(s network.Stream) {
+		s.host.SetStreamHandler(id, func(s network.Stream) {
 			ss.Handler(p2p.Peer{
 				Addr:   s.Conn().RemoteMultiaddr(),
 				Stream: stream{s},

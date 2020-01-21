@@ -55,7 +55,7 @@ func main() {
 			if err != nil {
 				log.Fatal("connect to target: ", err)
 			}
-			rtt, err := pingPong.Ping(ctx, peerID, "hey", "there", ",", "how are", "you", "?")
+			rtt, err := pingPong.Ping(ctx, peerID, "hey", "there", ",", "how are", "you", "?", "wtf", "wrd")
 			if err != nil {
 				log.Fatal("ping target: ", err)
 			}
